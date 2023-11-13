@@ -1,4 +1,5 @@
-﻿using cotr.backend.Model;
+﻿using Azure.Core;
+using cotr.backend.Model;
 using cotr.backend.Model.Request;
 using cotr.backend.Model.Tables;
 using cotr.backend.Repository.User;
@@ -23,11 +24,11 @@ namespace cotr.backend.test.Services
             userRepostory.Setup(x => x.GetUserByNicknameOrEmailAsync(request.User)).ReturnsAsync(users);
             userRepostory.Setup(x => x.GetUserCredentialByIdAsync(users.UserId)).ReturnsAsync(credential);
 
-            Mock<IEncryptService> encryptService = new();
-            encryptService.Setup(x => x.ValidatePassword(request.Password, credential.HashedPassword)).Returns(true);
+            Mock<ISecutiryService> securityService = new();
+            securityService.Setup(x => x.ValidatePassword(request.Password, credential.HashedPassword)).Returns(true);
 
             //Act
-            UserService userService = new(userRepostory.Object, encryptService.Object);
+            UserService userService = new(userRepostory.Object, securityService.Object);
 
             Users res = await userService.ValidateUserAsync(request);
 
@@ -47,11 +48,11 @@ namespace cotr.backend.test.Services
             userRepostory.Setup(x => x.GetUserByNicknameOrEmailAsync(request.User)).ReturnsAsync(users);
             userRepostory.Setup(x => x.GetUserCredentialByIdAsync(users.UserId)).ReturnsAsync(credential);
 
-            Mock<IEncryptService> encryptService = new();
-            encryptService.Setup(x => x.ValidatePassword(request.Password, credential.HashedPassword)).Returns(false);
+            Mock<ISecutiryService> securityService = new();
+            securityService.Setup(x => x.ValidatePassword(request.Password, credential.HashedPassword)).Returns(false);
 
             //Act
-            UserService userService = new(userRepostory.Object, encryptService.Object);
+            UserService userService = new(userRepostory.Object, securityService.Object);
 
             //Assert
             await Assert.ThrowsAsync<ApiException>(async() => await userService.ValidateUserAsync(request));
@@ -69,10 +70,10 @@ namespace cotr.backend.test.Services
             userRepostory.Setup(x => x.GetUserByNicknameOrEmailAsync(request.User)).ReturnsAsync(users);
             userRepostory.Setup(x => x.GetUserCredentialByIdAsync(users.UserId)).ReturnsAsync(credential);
 
-            Mock<IEncryptService> encryptService = new();
+            Mock<ISecutiryService> securityService = new();
 
             //Act
-            UserService userService = new(userRepostory.Object, encryptService.Object);
+            UserService userService = new(userRepostory.Object, securityService.Object);
 
             //Assert
             await Assert.ThrowsAsync<ApiException>(async () => await userService.ValidateUserAsync(request));
@@ -89,10 +90,10 @@ namespace cotr.backend.test.Services
             Mock<IUserRepostory> userRepostory = new();
             userRepostory.Setup(x => x.GetUserByNicknameOrEmailAsync(request.User)).ThrowsAsync(ApiExceptionMockData.ApiException404);
 
-            Mock<IEncryptService> encryptService = new();
+            Mock<ISecutiryService> securityService = new();
 
             //Act
-            UserService userService = new(userRepostory.Object, encryptService.Object);
+            UserService userService = new(userRepostory.Object, securityService.Object);
 
             //Assert
             await Assert.ThrowsAsync<ApiException>(async () => await userService.ValidateUserAsync(request));
@@ -110,10 +111,10 @@ namespace cotr.backend.test.Services
             userRepostory.Setup(x => x.GetUserByNicknameOrEmailAsync(request.User)).ReturnsAsync(users);
             userRepostory.Setup(x => x.GetUserCredentialByIdAsync(users.UserId)).ThrowsAsync(ApiExceptionMockData.ApiException404);
 
-            Mock<IEncryptService> encryptService = new();
+            Mock<ISecutiryService> securityService = new();
 
             //Act
-            UserService userService = new(userRepostory.Object, encryptService.Object);
+            UserService userService = new(userRepostory.Object, securityService.Object);
 
             //Assert
             await Assert.ThrowsAsync<ApiException>(async () => await userService.ValidateUserAsync(request));
@@ -133,12 +134,12 @@ namespace cotr.backend.test.Services
             #pragma warning restore CS8600
             userRepostory.Setup(x => x.SaveNewUserAsync(It.IsAny<Users>())).ReturnsAsync(users);
 
-            Mock<IEncryptService> encryptService = new();
-            encryptService.Setup(x => x.GenerateSalt()).Returns(UserMockData.Salt);
-            encryptService.Setup(x => x.EncryptPassword(request.Password, UserMockData.Salt)).Returns(UserMockData.HashedPassword);
+            Mock<ISecutiryService> securityService = new();
+            securityService.Setup(x => x.GenerateSalt()).Returns(UserMockData.Salt);
+            securityService.Setup(x => x.EncryptPassword(request.Password, UserMockData.Salt)).Returns(UserMockData.HashedPassword);
 
             //Act
-            UserService userService = new(userRepostory.Object, encryptService.Object);
+            UserService userService = new(userRepostory.Object, securityService.Object);
 
             await userService.SignupUserAsync(request);
         }
@@ -153,10 +154,10 @@ namespace cotr.backend.test.Services
             Mock<IUserRepostory> userRepostory = new();
             userRepostory.Setup(x => x.GetUserByEmailAsync(request.Email)).ReturnsAsync(users);
 
-            Mock<IEncryptService> encryptService = new();
+            Mock<ISecutiryService> securityService = new();
 
             //Act
-            UserService userService = new(userRepostory.Object, encryptService.Object);
+            UserService userService = new(userRepostory.Object, securityService.Object);
 
             //Assert
             await Assert.ThrowsAsync<ApiException>(async () => await userService.SignupUserAsync(request));
@@ -175,13 +176,252 @@ namespace cotr.backend.test.Services
             #pragma warning restore CS8600
             userRepostory.Setup(x => x.GetUserByNicknameAsync(request.Nickname)).ReturnsAsync(users);
 
-            Mock<IEncryptService> encryptService = new();
+            Mock<ISecutiryService> securityService = new();
 
             //Act
-            UserService userService = new(userRepostory.Object, encryptService.Object);
+            UserService userService = new(userRepostory.Object, securityService.Object);
 
             //Assert
             await Assert.ThrowsAsync<ApiException>(async () => await userService.SignupUserAsync(request));
+        }
+
+        [Fact]
+        public async Task SignupUserAsyncShouldExption409Birthdate()
+        {
+            //Arrange
+            SignupRequest request = UserMockData.SignupRequest;
+            request.Birthdate = DateTime.Now;
+
+            Mock<IUserRepostory> userRepostory = new();
+            #pragma warning disable CS8600
+            userRepostory.Setup(x => x.GetUserByEmailAsync(request.Email)).ReturnsAsync((Users)null);
+            userRepostory.Setup(x => x.GetUserByNicknameAsync(request.Nickname)).ReturnsAsync((Users)null);
+            #pragma warning restore CS8600
+
+            Mock<ISecutiryService> securityService = new();
+
+            //Act
+            UserService userService = new(userRepostory.Object, securityService.Object);
+
+            //Assert
+            await Assert.ThrowsAsync<ApiException>(async () => await userService.SignupUserAsync(request));
+        }
+
+        [Fact]
+        public async Task SignupUserAsyncShouldExption409Password()
+        {
+            //Arrange
+            SignupRequest request = UserMockData.SignupRequestBadPassword;
+
+            Mock<IUserRepostory> userRepostory = new();
+            #pragma warning disable CS8600
+            userRepostory.Setup(x => x.GetUserByEmailAsync(request.Email)).ReturnsAsync((Users)null);
+            userRepostory.Setup(x => x.GetUserByNicknameAsync(request.Nickname)).ReturnsAsync((Users)null);
+            #pragma warning restore CS8600
+
+            Mock<ISecutiryService> securityService = new();
+
+            //Act
+            UserService userService = new(userRepostory.Object, securityService.Object);
+
+            //Assert
+            await Assert.ThrowsAsync<ApiException>(async () => await userService.SignupUserAsync(request));
+        }
+
+        [Fact]
+        public async Task SignupUserAsyncShouldExption500SaveUser()
+        {
+            //Arrange
+            SignupRequest request = UserMockData.SignupRequest;
+            request.Birthdate = DateTime.Now;
+
+            Mock<IUserRepostory> userRepostory = new();
+            #pragma warning disable CS8600
+            userRepostory.Setup(x => x.GetUserByEmailAsync(request.Email)).ReturnsAsync((Users)null);
+            userRepostory.Setup(x => x.GetUserByNicknameAsync(request.Nickname)).ReturnsAsync((Users)null);
+            #pragma warning restore CS8600
+            userRepostory.Setup(x => x.SaveNewUserAsync(new(request.Nickname, request.Email, request.Name, request.Surname, request.SecondSurname, request.Birthdate, request.Affiliation))).ThrowsAsync(ApiExceptionMockData.ApiException500);
+
+            Mock<ISecutiryService> securityService = new();
+
+            //Act
+            UserService userService = new(userRepostory.Object, securityService.Object);
+
+            //Assert
+            await Assert.ThrowsAsync<ApiException>(async () => await userService.SignupUserAsync(request));
+        }
+
+        [Fact]
+        public async Task SignupUserAsyncShouldExption500SaveCredential()
+        {
+            //Arrange
+            SignupRequest request = UserMockData.SignupRequest;
+            request.Birthdate = DateTime.Now;
+            Users users = UserMockData.Users;
+            string salt = UserMockData.Salt;
+            string hashedPassword = UserMockData.HashedPassword;
+
+            Mock<IUserRepostory> userRepostory = new();
+            #pragma warning disable CS8600
+            userRepostory.Setup(x => x.GetUserByEmailAsync(request.Email)).ReturnsAsync((Users)null);
+            userRepostory.Setup(x => x.GetUserByNicknameAsync(request.Nickname)).ReturnsAsync((Users)null);
+            #pragma warning restore CS8600
+            userRepostory.Setup(x => x.SaveNewUserAsync(new(request.Nickname, request.Email, request.Name, request.Surname, request.SecondSurname, request.Birthdate, request.Affiliation))).ReturnsAsync(users);
+            userRepostory.Setup(x => x.SaveNewCredentialAsync(new(users.UserId, salt, hashedPassword, DateTime.Now, 0, null, null, true))).ThrowsAsync(ApiExceptionMockData.ApiException500);
+
+            Mock<ISecutiryService> securityService = new();
+            securityService.Setup(x => x.GenerateSalt()).Returns(salt);
+            securityService.Setup(x => x.EncryptPassword(request.Password, salt)).Returns(hashedPassword);
+
+            //Act
+            UserService userService = new(userRepostory.Object, securityService.Object);
+
+            //Assert
+            await Assert.ThrowsAsync<ApiException>(async () => await userService.SignupUserAsync(request));
+        }
+
+        [Fact]
+        public async Task UpdatePasswordAsyncShouldVoid()
+        {
+            //Arrange
+            UpdatePasswordRequest request = UserMockData.UpdatePasswordRequest;
+            UserCredential credential = UserMockData.UserCredentialRecoveryPassword;
+
+            Mock<IUserRepostory> userRepostory = new();
+            userRepostory.Setup(x => x.GetUserCredentialByResetToken(request.Token)).ReturnsAsync(credential);
+
+            Mock<ISecutiryService> securityService = new();
+
+            //Act
+            UserService userService = new(userRepostory.Object, securityService.Object);
+
+            await userService.UpdatePasswordAsync(request);
+        }
+
+        [Fact]
+        public async Task UpdatePasswordAsyncShouldApiException404()
+        {
+            //Arrange
+            UpdatePasswordRequest request = UserMockData.UpdatePasswordRequest;
+            UserCredential credential = UserMockData.UserCredentialRecoveryPassword;
+
+            Mock<IUserRepostory> userRepostory = new();
+            userRepostory.Setup(x => x.GetUserCredentialByResetToken(request.Token)).ThrowsAsync(ApiExceptionMockData.ApiException404);
+
+            Mock<ISecutiryService> securityService = new();
+
+            //Act
+            UserService userService = new(userRepostory.Object, securityService.Object);
+
+            //Assert
+            await Assert.ThrowsAsync<ApiException>(async () => await userService.UpdatePasswordAsync(request));
+        }
+
+        [Fact]
+        public async Task UpdatePasswordAsyncShouldApiException401()
+        {
+            //Arrange
+            UpdatePasswordRequest request = UserMockData.UpdatePasswordRequest;
+            UserCredential credential = UserMockData.UserCredentialRecoveryPasswordBadTokenExpiration;
+
+            Mock<IUserRepostory> userRepostory = new();
+            userRepostory.Setup(x => x.GetUserCredentialByResetToken(request.Token)).ReturnsAsync(credential);
+
+            Mock<ISecutiryService> securityService = new();
+
+            //Act
+            UserService userService = new(userRepostory.Object, securityService.Object);
+
+            //Assert
+            await Assert.ThrowsAsync<ApiException>(async () => await userService.UpdatePasswordAsync(request));
+        }
+
+        [Fact]
+        public async Task UpdatePasswordAsyncShouldApiException409()
+        {
+            //Arrange
+            UpdatePasswordRequest request = UserMockData.UpdatePasswordRequestBadPassword;
+            UserCredential credential = UserMockData.UserCredentialRecoveryPassword;
+
+            Mock<IUserRepostory> userRepostory = new();
+            userRepostory.Setup(x => x.GetUserCredentialByResetToken(request.Token)).ReturnsAsync(credential);
+
+            Mock<ISecutiryService> securityService = new();
+
+            //Act
+            UserService userService = new(userRepostory.Object, securityService.Object);
+
+            //Assert
+            await Assert.ThrowsAsync<ApiException>(async () => await userService.UpdatePasswordAsync(request));
+        }
+
+        [Fact]
+        public async Task UpdatePasswordAsyncShouldApiException500()
+        {
+            //Arrange
+            UpdatePasswordRequest request = UserMockData.UpdatePasswordRequest;
+            UserCredential credential = UserMockData.UserCredentialRecoveryPassword;
+
+            Mock<IUserRepostory> userRepostory = new();
+            userRepostory.Setup(x => x.GetUserCredentialByResetToken(request.Token)).ReturnsAsync(credential);
+            userRepostory.Setup(x => x.UpdateCredentialsAsync(credential)).ThrowsAsync(ApiExceptionMockData.ApiException500);
+
+            Mock<ISecutiryService> securityService = new();
+
+            //Act
+            UserService userService = new(userRepostory.Object, securityService.Object);
+
+            //Assert
+            await Assert.ThrowsAsync<ApiException>(async () => await userService.UpdatePasswordAsync(request));
+        }
+
+        [Fact]
+        public async Task RecoverPasswordAsyncShouldEmailMessage()
+        {
+            //Arrange
+            Users user = UserMockData.Users;
+            UserCredential credential = UserMockData.UserCredential;
+            EmailMessage emailMessage = UserMockData.RecoveryEmail;
+            string email = "email_random@gmail.com";
+
+            Mock<IUserRepostory> userRepostory = new();
+            userRepostory.Setup(x => x.GetUserByEmailAsync(email)).ReturnsAsync(user);
+            userRepostory.Setup(x => x.GetUserCredentialByIdAsync(user.UserId)).ReturnsAsync(credential);
+
+            Mock<ISecutiryService> securityService = new();
+            securityService.Setup(x => x.RandomToken()).Returns("1234");
+
+            //Act
+            UserService userService = new(userRepostory.Object, securityService.Object);
+
+            EmailMessage res = await userService.RecoverPasswordAsync(email);
+
+            //Assert
+            Assert.Equal(res, emailMessage);
+        }
+
+        [Fact]
+        public async Task RecoverPasswordAsyncShouldApiExceptio404()
+        {
+            //Arrange
+            Users user = UserMockData.Users;
+            UserCredential credential = UserMockData.UserCredential;
+            EmailMessage emailMessage = UserMockData.RecoveryEmail;
+            string email = "email_random@gmail.com";
+
+            Mock<IUserRepostory> userRepostory = new();
+            #pragma warning disable CS8600
+            userRepostory.Setup(x => x.GetUserByEmailAsync(email)).ReturnsAsync((Users)null);
+            #pragma warning restore CS8600
+
+            Mock<ISecutiryService> securityService = new();
+            securityService.Setup(x => x.RandomToken()).Returns("1234");
+
+            //Act
+            UserService userService = new(userRepostory.Object, securityService.Object);
+
+            //Assert
+            await Assert.ThrowsAsync<ApiException>(async () => await userService.RecoverPasswordAsync(email));
         }
     }
 }

@@ -17,7 +17,8 @@ namespace cotr.backend.test.Services
                 {"JwtConfiguration:TokenApi:RefreshKey", "8Rx7926sws2PM2KLEDuewRYdpZ4DuP3A86BCSzH2"},
                 {"JwtConfiguration:TokenApi:Issuer", "https://codesofthering.com"},
                 {"JwtConfiguration:TokenApi:Audience", "https://codesofthering.com/cotr.api"},
-                {"JwtConfiguration:TokenApi:DurationInMinutes", "1"}
+                {"JwtConfiguration:TokenApi:DurationInMinutesAccess", "1"},
+                {"JwtConfiguration:TokenApi:DurationInDaysRefresh", "14"}
             };
         }
 
@@ -34,7 +35,7 @@ namespace cotr.backend.test.Services
             //Act
             TokenService tokenService = new(configuration);
 
-            string accessToken = tokenService.GetToken(true);
+            string accessToken = tokenService.GetToken(1, true);
 
             //Assert
             Assert.NotNull(accessToken);
@@ -53,7 +54,7 @@ namespace cotr.backend.test.Services
             //Act
             TokenService tokenService = new(configuration);
 
-            string accessToken = tokenService.GetToken(false);
+            string accessToken = tokenService.GetToken(1, false);
 
             //Assert
             Assert.NotNull(accessToken);
@@ -70,7 +71,7 @@ namespace cotr.backend.test.Services
             TokenService tokenService = new(configuration);
 
             //Assert
-            Assert.Throws<ApiException>(() => tokenService.GetToken(true));
+            Assert.Throws<ApiException>(() => tokenService.GetToken(1,true));
         }
     }
 }
