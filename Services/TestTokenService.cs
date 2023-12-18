@@ -1,7 +1,6 @@
 ﻿using cotr.backend.Model;
 using cotr.backend.Service.Token;
 using Microsoft.Extensions.Configuration;
-using Moq;
 
 namespace cotr.backend.test.Services
 {
